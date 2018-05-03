@@ -5,18 +5,23 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 
 import java.util.ArrayList;
 import java.util.List;
 
 
-public class ShowTime extends View {
+public class ShowTime extends View{
     private int cellHeight;
     private int cellWidth;
     private boolean isFirst = true;
+    private boolean dragging = false;
+    private String TAG = "DRAG EVENT";
     Ball ball;
     Bar bar;
+    private float moveBarX, moveBarY;
+    private int primaryPostion;
     List<Brick> bricks;
     Context context;
     private int howMany = 0;
@@ -36,6 +41,8 @@ public class ShowTime extends View {
             cellWidth = canvas.getWidth();
             isFirst = false;
             runFor = 10;
+            primaryPostion = cellWidth/2 - 50;
+            bar.drawBar(canvas, primaryPostion, primaryPostion + 100);
             bricks = new ArrayList<Brick>();
             for(int i = howMany * 10; i > 0; i--){
                 bricks.add(new Brick());
@@ -47,7 +54,6 @@ public class ShowTime extends View {
         canvas.drawRect(cellWidth - extraSpace / 2,0, cellWidth, cellHeight, boundary);
 
         ball.drawBall(cellWidth/2,cellHeight/2, canvas);
-        bar.drawBar(canvas, 300, 395);
         int initialX = 0, initialY = 0;
         for (Brick brick:
              bricks) {
@@ -60,9 +66,15 @@ public class ShowTime extends View {
                 //runFor--;
             }
         }
+            if(moveBarX > cellWidth / 2){
+                bar.drawBar(canvas, primaryPostion, primaryPostion + 100);
+            }
+            else{
+                bar.drawBar(canvas, primaryPostion, primaryPostion + 100);
+            }
+
         invalidate();
     }
-
     public ShowTime(Context context) {
         super(context);
         ball = new Ball();
@@ -70,6 +82,21 @@ public class ShowTime extends View {
         boundary = new Paint();
         boundary.setColor(Color.GREEN);
         boundary.setStyle(Paint.Style.FILL);
+        this.setOnTouchListener(new OnTouchListener() {
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent) {
+                moveBarX = motionEvent.getX();
+                moveBarY = motionEvent.getY();
+                if(moveBarX > cellWidth/2)
+                    primaryPostion = primaryPostion + 10;
+                else
+                    primaryPostion = primaryPostion - 10;
+                return true;
+            }
+        });
         //brick = new Brick();
     }
+
+
 }
+
