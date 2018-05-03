@@ -15,7 +15,7 @@ import java.util.List;
 public class ShowTime extends View{
     private int cellHeight;
     private int cellWidth;
-    private boolean isFirst = true;
+    private boolean isFirst = true, isFirstPosition = true;
     private boolean dragging = false;
     private String TAG = "DRAG EVENT";
     Ball ball;
@@ -27,6 +27,7 @@ public class ShowTime extends View{
     private int howMany = 0;
     private float extraSpace;
     private int runFor;
+    private float previousPosition, presentPosition;
     Paint boundary;
     @Override
     protected void onDraw(Canvas canvas) {
@@ -66,12 +67,13 @@ public class ShowTime extends View{
                 //runFor--;
             }
         }
-            if(moveBarX > cellWidth / 2){
-                bar.drawBar(canvas, primaryPostion, primaryPostion + 100);
-            }
-            else{
-                bar.drawBar(canvas, primaryPostion, primaryPostion + 100);
-            }
+        bar.drawBar(canvas, primaryPostion, primaryPostion + 100);
+//            if(moveBarX > cellWidth / 2){
+//                bar.drawBar(canvas, primaryPostion, primaryPostion + 100);
+//            }
+//            else{
+//                bar.drawBar(canvas, primaryPostion, primaryPostion + 100);
+//            }
 
         invalidate();
     }
@@ -85,12 +87,26 @@ public class ShowTime extends View{
         this.setOnTouchListener(new OnTouchListener() {
             @Override
             public boolean onTouch(View view, MotionEvent motionEvent) {
-                moveBarX = motionEvent.getX();
-                moveBarY = motionEvent.getY();
-                if(moveBarX > cellWidth/2)
+                if(isFirstPosition){
+                    previousPosition = motionEvent.getX();
+                    Log.d(TAG, "prevPos: "+ presentPosition);
+                    isFirstPosition = false;
+                    return true;
+                }
+                presentPosition = motionEvent.getX();
+                Log.d(TAG, "presentPos: "+ presentPosition);
+
+                //moveBarX = motionEvent.getX();
+                //moveBarY = motionEvent.getY();
+                if(presentPosition > previousPosition)
                     primaryPostion = primaryPostion + 10;
                 else
                     primaryPostion = primaryPostion - 10;
+                previousPosition = presentPosition;
+                if(primaryPostion + 100 >= cellWidth)
+                    primaryPostion = cellWidth - 100;
+                else if (primaryPostion <= 0)
+                    primaryPostion = 0;
                 return true;
             }
         });
