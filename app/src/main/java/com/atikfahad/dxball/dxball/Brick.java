@@ -2,28 +2,29 @@ package com.atikfahad.dxball.dxball;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.graphics.Shader;
 
 public class Brick extends Drawable {
-    Paint brickPaint;
-    static int colorChange = 0;
+    Paint brickPaint = new Paint();
+    private int brickPoint = 0;
+    private int CATEGORY = 1;
     Rect brick = new Rect();
     public Brick(){
-        brickPaint = new Paint();
-        brickPaint.setColor(setColorChange(colorChange++));
-        brickPaint.setStyle(Paint.Style.FILL);
+        brickPoint = 10;
         brick = new Rect();
-    }
-    public int setColorChange(int colorChange){
-        if(colorChange % 2 == 1)
-            return Color.MAGENTA;
-        else
-            return Color.BLUE;
+        brickPaint.setShader(new LinearGradient(0, 0, 0, 500, Color.parseColor("#01579B"), Color.parseColor("#4FC3F7"), Shader.TileMode.MIRROR));
+        brickPaint.setStyle(Paint.Style.FILL);
     }
     @Override
     public void draw(Canvas canvas) {
 
+    }
+    public void setBrickPaint(String colorFirst, String colorSecond){
+        brickPaint.setShader(new LinearGradient(0, 0, 0, 500, Color.parseColor(colorFirst), Color.parseColor(colorSecond), Shader.TileMode.MIRROR));
+        brickPaint.setStyle(Paint.Style.FILL);
     }
     public void drawBrick(Canvas canvas, int left, int top, int right, int bottom){
         brick.left = left;
@@ -35,12 +36,18 @@ public class Brick extends Drawable {
     public Rect getBrick(){
         return this.brick;
     }
-    public Paint getBrickPaint(){
-        return this.brickPaint;
+
+    public int getBrickPoint(){
+        return this.brickPoint;
     }
-//    public static List collectionOfBricks(Canvas canvas){
-//            int calculate = canvas.getWidth();
-//
-//        return
-//    }
+
+    public void setBrickPoint(int brickPoint){
+        this.brickPoint = brickPoint;
+    }
+    public void setCategory(int category){
+        this.CATEGORY = category;
+    }
+    public int getCATEGORY(){
+        return this.CATEGORY;
+    }
 }

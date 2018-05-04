@@ -1,13 +1,10 @@
 package com.atikfahad.dxball.dxball;
 
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
-import android.graphics.drawable.*;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
@@ -17,10 +14,8 @@ import java.util.List;
 
 
 public class ShowTime extends View{
- //   Bitmap lifeIcon;
-//    Paint lifeIconPaint;
-    //private Drawable iconLife;
-    android.graphics.drawable.Drawable iconLife = getResources().getDrawable(R.drawable.ic_heart_test);
+    LifeSpan lifeSpan;
+    Paint paint = new Paint();
     private int cellHeight;
     private int cellWidth;
     private boolean isFirst = true, isFirstPosition = true;
@@ -34,20 +29,15 @@ public class ShowTime extends View{
     private float extraSpace;
     private float previousPosition, presentPosition;
     private Rect barPlace;
-    private float flow = 3.5f;
     Paint boundary;
     private int ballPositionX, ballPositionY, ballTotalPositionY;
-    private int boundaryLeft, boundaryRight, boundaryTop, boundaryBottom;
     private int totalBricks;
     @Override
     protected void onDraw(Canvas canvas) {
         if(isFirst){
-            //canvas.drawBitmap(lifeIcon,0,0, lifeIconPaint );
-            //iconLife = getResources().getDrawable(R.mipmap)
-            //canvas.setBitmap(lifeIcon);
-
+            lifeSpan.drawLife(canvas);
             int calculate = canvas.getWidth();
-            howMany = calculate/40;
+            howMany = calculate / 40;
             extraSpace = calculate % 40;
             Log.d("howMany", Float.toString(howMany));
             Log.d("ExtraSpace", Float.toString(extraSpace));
@@ -58,15 +48,15 @@ public class ShowTime extends View{
             bar.drawBar(canvas, primaryPostion, primaryPostion + 100);
             bricks = new ArrayList<Brick>();
             totalBricks = howMany * 2;
-            for(int i = totalBricks; i > 0; i--){
+            for(int i = totalBricks - 1; i > 0; i--){
                 bricks.add(new Brick());
                 Log.d("Bricks Creation", Integer.toString(i));
             }
+            bricks.add(new BrickSecond());
             ballPositionX = cellWidth / 2;
             ballPositionY = cellHeight - 100;
-            //boundaryLeft =
 
-            int initialX = 0, initialY = 35;
+            int initialX = 0, initialY = 32;
             for (Brick brick:
                     bricks) {
                 brick.drawBrick(canvas,initialX, initialY, initialX + 120, initialY + 90 );
@@ -79,8 +69,42 @@ public class ShowTime extends View{
 
         }
         //canvas.drawRGB(255,255,255); // Initial Color for the screen..
-        iconLife.setBounds(0,0,canvas.getWidth(), canvas.getHeight());
-        iconLife.draw(canvas);
+        //canvas.drawColor(Color.parseColor("#424242"));
+        //paint.setShader(new LinearGradient(0, 0, 0, getHeight(), Color.BLACK, Color.WHITE, Shader.TileMode.MIRROR));
+        //canvas.drawPath(arrowPath, paint);
+        //canvas.drawColor(paint);
+
+
+        // LIFE SPAN START
+        lifeSpan.drawLife(canvas);
+        // Converted into dynamic;
+//        iconLife.setBounds(cellWidth - 60,0,cellWidth, 35);
+//        iconLife.draw(canvas);
+//        iconLife.setBounds(cellWidth - 120,0,cellWidth - 60, 35);
+//        iconLife.draw(canvas);
+//        iconLife.setBounds(cellWidth - 180,0,cellWidth - 120, 35);
+//        iconLife.draw(canvas);
+
+
+
+        // LIFE SPAN END
+
+        // SCORE BOARD START
+        // Changed to Dynamic
+        lifeSpan.scoreBoard(canvas);
+
+        // SCORE BOARD END
+
+        // LEVEL BOARD START
+
+        paint.setColor(Color.parseColor("#F44336"));
+        paint.setTextSize(25);
+        paint.setStyle(Paint.Style.FILL);
+        canvas.drawText("LEVEL : X", cellWidth / 2 - 30,25 , paint);
+
+
+        // LEVEL BOARD END
+
         // Boundary Section
         canvas.drawRect(0,0, extraSpace / 2, cellHeight, boundary);
         canvas.drawRect(cellWidth - extraSpace / 2,0, cellWidth, cellHeight, boundary);
@@ -100,38 +124,67 @@ public class ShowTime extends View{
                 dy = - dy;
                 //dx = - dx;
             }
+            if(ballPositionY >= cellHeight){
+                if(lifeSpan.removeLife(canvas)){
+                    dy = - dy;
+                    try { Thread.sleep(2000); }
+                    catch (InterruptedException ex) { android.util.Log.d("DX Ball", ex.toString()); }
+                    // HERE NEED TO IMPROVE MORE MAY BE IMPLEMENT THREAD
+                }
+                else{
+                    // GAME WILL BE OVER HERE
+                }
+            }
 
         }
-
 
         if(ballPositionX <= 0){
             dx = - dx;
-            //dy = - dy;
         }
         if(ballPositionX >= cellWidth){
             dx = - dx;
-            //dy = - dy;
         }
         if(ballPositionY <= 0)
             dy = - dy;
+
         // Brick Section
         for (Brick brick:
              bricks) {
             canvas.drawRect(brick.getBrick(), brick.brickPaint);
         }
+        if(bricks.isEmpty()){
+            // END OF THE STAGE
+        }
 
         if(ballPositionY <= cellHeight/2){
-            int needToRemove = 0;
-            for (int i = totalBricks - 1; i > 0; i--) {
+            int needToRemove = -1;
+//            for (int i = totalBricks - 1; i >= 0; i--) {
+//                if(ball.collisionWithBrick(bricks.get(i).getBrick())){
+//                    needToRemove = i;
+//                    dy = -dy;
+//                }
+            for (int i = 0; i < totalBricks; i++) {
                 if(ball.collisionWithBrick(bricks.get(i).getBrick())){
-                    needToRemove = i;
-                    dy = -dy;
+                    lifeSpan.increasePoint(bricks.get(i).getBrickPoint());
+                    if(bricks.get(i).getCATEGORY() == 2){
+                        if(((BrickSecond) bricks.get(i)).executeIt())
+                            needToRemove = i;
+                        else
+                            needToRemove = -1;
+                    }
+                    else
+                        needToRemove = i;
+
+                    dy = - dy;
                 }
+
             }
-            if(needToRemove != 0){
+
+            if(needToRemove != -1){
                 bricks.remove(needToRemove);
                 --totalBricks;
             }
+
         }
 
         // Bar Section
@@ -143,6 +196,7 @@ public class ShowTime extends View{
         super(context);
         ball = new Ball();
         bar = new Bar();
+        lifeSpan = new LifeSpan(context);
         boundary = new Paint();
         boundary.setColor(Color.GREEN);
         boundary.setStyle(Paint.Style.FILL);
