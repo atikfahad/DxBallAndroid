@@ -32,8 +32,8 @@ public class Ball extends Drawable {
         ballPositionX = x;
         ballPositionY = y;
         ballPaint = new Paint();
-        ballPaint.setColor(Color.RED);
-        ballPaint.setStyle(Paint.Style.FILL);
+        ballPaint.setColor(Color.parseColor("#EF5350"));
+        ballPaint.setStyle(Paint.Style.FILL_AND_STROKE);
         canvas.drawCircle(ballPositionX, ballPositionY,radius, ballPaint);
         //canvas.drawRGB(255,255,255);
     }

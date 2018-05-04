@@ -1,10 +1,13 @@
 package com.atikfahad.dxball.dxball;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.graphics.drawable.*;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
@@ -14,6 +17,10 @@ import java.util.List;
 
 
 public class ShowTime extends View{
+ //   Bitmap lifeIcon;
+//    Paint lifeIconPaint;
+    //private Drawable iconLife;
+    android.graphics.drawable.Drawable iconLife = getResources().getDrawable(R.drawable.ic_heart_test);
     private int cellHeight;
     private int cellWidth;
     private boolean isFirst = true, isFirstPosition = true;
@@ -35,6 +42,10 @@ public class ShowTime extends View{
     @Override
     protected void onDraw(Canvas canvas) {
         if(isFirst){
+            //canvas.drawBitmap(lifeIcon,0,0, lifeIconPaint );
+            //iconLife = getResources().getDrawable(R.mipmap)
+            //canvas.setBitmap(lifeIcon);
+
             int calculate = canvas.getWidth();
             howMany = calculate/40;
             extraSpace = calculate % 40;
@@ -55,7 +66,7 @@ public class ShowTime extends View{
             ballPositionY = cellHeight - 100;
             //boundaryLeft =
 
-            int initialX = 0, initialY = 0;
+            int initialX = 0, initialY = 35;
             for (Brick brick:
                     bricks) {
                 brick.drawBrick(canvas,initialX, initialY, initialX + 120, initialY + 90 );
@@ -67,8 +78,9 @@ public class ShowTime extends View{
             }
 
         }
-        canvas.drawRGB(255,255,255); // Initial Color for the screen..
-
+        //canvas.drawRGB(255,255,255); // Initial Color for the screen..
+        iconLife.setBounds(0,0,canvas.getWidth(), canvas.getHeight());
+        iconLife.draw(canvas);
         // Boundary Section
         canvas.drawRect(0,0, extraSpace / 2, cellHeight, boundary);
         canvas.drawRect(cellWidth - extraSpace / 2,0, cellWidth, cellHeight, boundary);

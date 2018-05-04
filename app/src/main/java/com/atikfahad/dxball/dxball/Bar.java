@@ -11,8 +11,8 @@ public class Bar extends Drawable {
     private Rect barPlace;
     public Bar(){
         barPaint = new Paint();
-        barPaint.setColor(Color.RED);
-        barPaint.setStyle(Paint.Style.FILL);
+        barPaint.setColor(Color.parseColor("#1976D2"));
+        barPaint.setStyle(Paint.Style.FILL_AND_STROKE);
         barPlace = new Rect();
     }
     public Rect getBarPlace(){
