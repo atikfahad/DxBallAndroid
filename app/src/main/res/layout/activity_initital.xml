@@ -12,7 +12,7 @@
         android:layout_height="250dp"
         android:src="@mipmap/ic_launcher_foreground"
         android:layout_centerHorizontal="true"
-        android:id="@+id/image"/>
+        android:id="@+id/logoImage"/>
 
     <TextView
         android:layout_width="match_parent"
