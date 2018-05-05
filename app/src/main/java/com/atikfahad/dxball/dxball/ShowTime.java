@@ -1,21 +1,36 @@
 package com.atikfahad.dxball.dxball;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
+import android.os.Handler;
+import android.os.Vibrator;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
 
-public class ShowTime extends View{
+public class ShowTime extends View implements SensorEventListener{
+    SensorManager mSensorManager;
+    Sensor mRotationVector;
+    private boolean gameOver = false, levelUp = false;
+    private boolean levelSecondFirst = false;
     LifeSpan lifeSpan;
     Paint paint = new Paint();
+    private int currentLevel = 1;
     private int cellHeight;
     private int cellWidth;
     private boolean isFirst = true, isFirstPosition = true;
@@ -35,38 +50,36 @@ public class ShowTime extends View{
     @Override
     protected void onDraw(Canvas canvas) {
         if(isFirst){
-            lifeSpan.drawLife(canvas);
+            isFirst = false;
+
+            // TOTAL BRICKS BASED ON WIDTH
             int calculate = canvas.getWidth();
             howMany = calculate / 40;
             extraSpace = calculate % 40;
-            Log.d("howMany", Float.toString(howMany));
-            Log.d("ExtraSpace", Float.toString(extraSpace));
             cellHeight = canvas.getHeight();
             cellWidth = canvas.getWidth();
-            isFirst = false;
+            bricks = new ArrayList<Brick>();
+            totalBricks = howMany;
+            switch (currentLevel){
+                case 1:
+                    levelFirst(canvas);
+                    break;
+                case 2:
+                    levelSecond(canvas);
+                    break;
+                default:
+                    gameFinished(canvas);
+                    break;
+            }
+            // LEVEL INITIALIZE
+
+            // BAR AREA
             primaryPostion = cellWidth/2 - 50;
             bar.drawBar(canvas, primaryPostion, primaryPostion + 100);
-            bricks = new ArrayList<Brick>();
-            totalBricks = howMany * 2;
-            for(int i = totalBricks - 1; i > 0; i--){
-                bricks.add(new Brick());
-                Log.d("Bricks Creation", Integer.toString(i));
-            }
-            bricks.add(new BrickSecond());
+
+            // BALL AREA
             ballPositionX = cellWidth / 2;
             ballPositionY = cellHeight - 100;
-
-            int initialX = 0, initialY = 32;
-            for (Brick brick:
-                    bricks) {
-                brick.drawBrick(canvas,initialX, initialY, initialX + 120, initialY + 90 );
-                initialX = initialX + 120;
-                if (initialX == cellWidth){
-                    initialX = 0;
-                    initialY = initialY + 90;
-                }
-            }
-
         }
         //canvas.drawRGB(255,255,255); // Initial Color for the screen..
         //canvas.drawColor(Color.parseColor("#424242"));
@@ -100,14 +113,20 @@ public class ShowTime extends View{
         paint.setColor(Color.parseColor("#F44336"));
         paint.setTextSize(25);
         paint.setStyle(Paint.Style.FILL);
-        canvas.drawText("LEVEL : X", cellWidth / 2 - 30,25 , paint);
+        canvas.drawText("LEVEL : " + this.currentLevel, cellWidth / 2 - 30,25 , paint);
 
 
         // LEVEL BOARD END
 
         // Boundary Section
-        canvas.drawRect(0,0, extraSpace / 2, cellHeight, boundary);
-        canvas.drawRect(cellWidth - extraSpace / 2,0, cellWidth, cellHeight, boundary);
+//        canvas.drawRect(0,0, extraSpace / 2, cellHeight, boundary);
+//        canvas.drawRect(cellWidth - extraSpace / 2,0, cellWidth, cellHeight, boundary);
+
+
+        // Bar Section
+
+        bar.drawBar(canvas, primaryPostion, primaryPostion + 200);
+        barPlace = bar.getBarPlace();
 
         // Ball Section
 
@@ -127,12 +146,14 @@ public class ShowTime extends View{
             if(ballPositionY >= cellHeight){
                 if(lifeSpan.removeLife(canvas)){
                     dy = - dy;
-                    try { Thread.sleep(2000); }
-                    catch (InterruptedException ex) { android.util.Log.d("DX Ball", ex.toString()); }
-                    // HERE NEED TO IMPROVE MORE MAY BE IMPLEMENT THREAD
+                    lostLife(canvas);
                 }
                 else{
-                    // GAME WILL BE OVER HERE
+                    //isFirst = true;
+                    gameOver = true;
+                    bricks.clear();
+                    //invalidate();
+                    gameOver(canvas);
                 }
             }
 
@@ -148,12 +169,20 @@ public class ShowTime extends View{
             dy = - dy;
 
         // Brick Section
-        for (Brick brick:
-             bricks) {
-            canvas.drawRect(brick.getBrick(), brick.brickPaint);
+        if(!gameOver || !levelUp){
+            for (Brick brick:
+                    bricks) {
+                canvas.drawRect(brick.getBrick(), brick.brickPaint);
+            }
         }
+
         if(bricks.isEmpty()){
-            // END OF THE STAGE
+            currentLevel = 2;
+            isFirst = true;
+            //invalidate();
+            levelUp = true;
+            levelSecondFirst = true;
+            levelSecond(canvas);
         }
 
         if(ballPositionY <= cellHeight/2){
@@ -186,14 +215,36 @@ public class ShowTime extends View{
             }
 
         }
+        if (gameOver){
+            canvas.drawColor(Color.DKGRAY);
+        }
+        if(levelSecondFirst){
+            canvas.drawColor(Color.GREEN);
+            paint.setColor(Color.BLUE);
+            paint.setTextSize(50);
+            paint.setFakeBoldText(true);
+            canvas.drawText("LEVEL 1 DONE!",canvas.getWidth() / 2 - 200,canvas.getHeight() / 2, paint);
+            invalidate();
+            Vibrator v = (Vibrator)getContext().getSystemService(Context.VIBRATOR_SERVICE);
+            v.vibrate(400);
+            try {
+                Thread.sleep(300);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
 
-        // Bar Section
-        bar.drawBar(canvas, primaryPostion, primaryPostion + 200);
-        barPlace = bar.getBarPlace();
+
+            levelSecondFirst = false;
+
+        }
         invalidate();
     }
     public ShowTime(Context context) {
         super(context);
+        mSensorManager = (SensorManager)getContext().getSystemService(Context.SENSOR_SERVICE);
+        mRotationVector = mSensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
+        if (mRotationVector != null)
+            mSensorManager.registerListener(this, mRotationVector,SensorManager.SENSOR_DELAY_NORMAL);
         ball = new Ball();
         bar = new Bar();
         lifeSpan = new LifeSpan(context);
@@ -231,5 +282,185 @@ public class ShowTime extends View{
     }
 
 
+    public void levelFirst(Canvas canvas){
+        currentLevel = 1;
+        gameOver = false;
+        levelUp = false;
+
+        for(int i = totalBricks; i > 0; i--){
+            if(i % 2 == 0)
+                if(i < 5)
+                    bricks.add(new BrickSecond());
+                else
+                    bricks.add(new Brick());
+            else
+                if(i > 10)
+                    bricks.add(new Brick());
+                else
+                    bricks.add(new BrickSecond());
+            Log.d("Bricks Creation", Integer.toString(i));
+        }
+        //bricks.add(new Brick());
+
+
+
+        //bricks.add(new BrickSecond());
+        int initialX = 0, initialY = 32;
+        for (Brick brick:
+                bricks) {
+            brick.drawBrick(canvas,initialX, initialY, initialX + 120, initialY + 90 );
+            initialX = initialX + 120;
+            if (initialX == cellWidth){
+                initialX = 0;
+                initialY = initialY + 90;
+            }
+        }
+
+
+    }
+    public void levelSecond(Canvas canvas){
+//        canvas.drawColor(Color.GREEN);
+//        paint.setColor(Color.BLUE);
+//        paint.setTextSize(50);
+//        paint.setFakeBoldText(true);
+        //canvas.drawText("LEVEL 1 DONE!",canvas.getWidth() / 2 - 200,canvas.getHeight() / 2, paint);
+//        Vibrator v = (Vibrator)getContext().getSystemService(Context.VIBRATOR_SERVICE);
+//        v.vibrate(400);
+//        try {
+//            Thread.sleep(1000);
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
+
+        for(int i = totalBricks; i > 0; i--){
+            if(i % 2 == 0)
+                if(i < 5)
+                    bricks.add(new BrickSecond());
+                else
+                    bricks.add(new Brick());
+            else
+            if(i > 10)
+                bricks.add(new Brick());
+            else
+                bricks.add(new BrickSecond());
+            Log.d("Bricks Creation", Integer.toString(i));
+        }
+
+
+        //bricks.add(new BrickSecond());
+        int initialX = 0, initialY = 32;
+        for (Brick brick:
+                bricks) {
+            brick.drawBrick(canvas,initialX, initialY, initialX + 120, initialY + 90 );
+            initialX = initialX + 120;
+            if (initialX == cellWidth){
+                initialX = 0;
+                initialY = initialY + 90;
+            }
+        }
+
+    }
+
+    public void gameFinished(Canvas canvas){
+
+    }
+    public void lostLife(Canvas canvas){
+        //invalidate();
+        primaryPostion = cellWidth/2 - 50;
+        ballPositionX = cellWidth / 2;
+        ballPositionY = cellHeight - 100;
+        canvas.drawColor(Color.RED);
+        Vibrator v = (Vibrator)getContext().getSystemService(Context.VIBRATOR_SERVICE);
+        v.vibrate(100);
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        invalidate();
+
+    }
+    public void gameOver(Canvas canvas){
+        isFirst = false;
+        canvas.drawColor(Color.RED);
+//        Paint over = new Paint();
+//        over.setColor(Color.RED);
+//        canvas.drawRect(0, 0, canvas.getWidth(), canvas.getHeight(), over);
+//        over.setStyle(Paint.Style.FILL);
+//        over.setTextSize(50);
+//        over.setFakeBoldText(true);
+//        canvas.drawText("FINAL SCORE : "+ lifeSpan.getPoint(),canvas.getWidth() / 2 - 200,canvas.getHeight() / 2, over);
+        Vibrator v = (Vibrator)getContext().getSystemService(Context.VIBRATOR_SERVICE);
+        v.vibrate(300);
+//        try {
+//            Thread.sleep(200);
+//
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
+        Intent i = new Intent(getContext(), GameOverActivity.class);
+        i.putExtra("SCORE", Integer.toString(lifeSpan.getPoint()));
+        getContext().startActivity(i);
+        ((StartActivity )getContext()).finish();
+//        invalidate();
+//        bricks.clear();
+//        paint.setColor(Color.MAGENTA);
+//        canvas.drawRect(0, 0, canvas.getWidth(), canvas.getHeight(), paint);
+//        canvas.drawColor(Color.parseColor("#C62828"));
+//        paint.setColor(Color.WHITE);
+//        paint.setTextSize(50);
+//        paint.setFakeBoldText(true);
+//        canvas.drawText("GAME OVER",canvas.getWidth() / 2 - 110,canvas.getHeight() / 2,paint);
+//        canvas.drawText("FINAL SCORE: "+ lifeSpan.getPoint(),canvas.getWidth() / 2 - 200,canvas.getHeight() / 2 + 60,paint);
+//        //Intent i = new Intent((StartActivity)getContext(), GameOverActivity.class);
+//        Vibrator v = (Vibrator)getContext().getSystemService(Context.VIBRATOR_SERVICE);
+//        v.vibrate(200);
+//        try {
+//            Thread.sleep(200);
+//            ((StartActivity )getContext()).finish();
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
+    }
+
+    double previous = 0, present = 0;
+    @Override
+    public void onSensorChanged(SensorEvent sensorEvent) {
+
+        if (sensorEvent.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
+            present = sensorEvent.values[1];
+            present = round(present, 1);
+            if (previous > present) {
+                primaryPostion -= 70;
+            }
+            else if(previous < present)
+                primaryPostion += 70;
+            else
+                primaryPostion = primaryPostion;
+
+            if (primaryPostion + 200 >= cellWidth)
+                primaryPostion = cellWidth - 200;
+            else if (primaryPostion <= 0)
+                primaryPostion = 0;
+
+            previous = round(present, 1);
+        }
+
+    }
+
+
+            public static double round(double value, int places) {
+            if (places < 0) throw new IllegalArgumentException();
+
+            BigDecimal bd = new BigDecimal(value);
+            bd = bd.setScale(places, RoundingMode.HALF_UP);
+            return bd.doubleValue();
+            }
+
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int i) {
+
+    }
 }
 
