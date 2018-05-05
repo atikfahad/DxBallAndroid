@@ -347,7 +347,7 @@ public class ShowTime extends View implements SensorEventListener{
         }
 
 
-        bricks.add(new BrickSecond());
+        //bricks.add(new BrickSecond());
         int initialX = 0, initialY = 32;
         for (Brick brick:
                 bricks) {
