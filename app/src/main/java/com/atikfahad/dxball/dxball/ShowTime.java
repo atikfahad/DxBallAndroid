@@ -6,6 +6,8 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.os.Handler;
+import android.os.Vibrator;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
@@ -15,6 +17,8 @@ import java.util.List;
 
 
 public class ShowTime extends View{
+    private boolean gameOver = false, levelUp = false;
+    private boolean levelSecondFirst = false;
     LifeSpan lifeSpan;
     Paint paint = new Paint();
     private int currentLevel = 1;
@@ -39,9 +43,6 @@ public class ShowTime extends View{
         if(isFirst){
             isFirst = false;
 
-
-
-
             // TOTAL BRICKS BASED ON WIDTH
             int calculate = canvas.getWidth();
             howMany = calculate / 40;
@@ -49,7 +50,7 @@ public class ShowTime extends View{
             cellHeight = canvas.getHeight();
             cellWidth = canvas.getWidth();
             bricks = new ArrayList<Brick>();
-            totalBricks = howMany * 2;
+            totalBricks = howMany;
             switch (currentLevel){
                 case 1:
                     levelFirst(canvas);
@@ -109,8 +110,8 @@ public class ShowTime extends View{
         // LEVEL BOARD END
 
         // Boundary Section
-        canvas.drawRect(0,0, extraSpace / 2, cellHeight, boundary);
-        canvas.drawRect(cellWidth - extraSpace / 2,0, cellWidth, cellHeight, boundary);
+//        canvas.drawRect(0,0, extraSpace / 2, cellHeight, boundary);
+//        canvas.drawRect(cellWidth - extraSpace / 2,0, cellWidth, cellHeight, boundary);
 
 
         // Bar Section
@@ -140,6 +141,9 @@ public class ShowTime extends View{
                 }
                 else{
                     //isFirst = true;
+                    gameOver = true;
+                    bricks.clear();
+                    //invalidate();
                     gameOver(canvas);
                 }
             }
@@ -156,14 +160,19 @@ public class ShowTime extends View{
             dy = - dy;
 
         // Brick Section
-        for (Brick brick:
-             bricks) {
-            canvas.drawRect(brick.getBrick(), brick.brickPaint);
+        if(!gameOver || !levelUp){
+            for (Brick brick:
+                    bricks) {
+                canvas.drawRect(brick.getBrick(), brick.brickPaint);
+            }
         }
+
         if(bricks.isEmpty()){
             currentLevel = 2;
             isFirst = true;
-            invalidate();
+            //invalidate();
+            levelUp = true;
+            levelSecondFirst = true;
             levelSecond(canvas);
         }
 
@@ -195,6 +204,28 @@ public class ShowTime extends View{
                 bricks.remove(needToRemove);
                 --totalBricks;
             }
+
+        }
+        if (gameOver){
+            canvas.drawColor(Color.DKGRAY);
+        }
+        if(levelSecondFirst){
+            canvas.drawColor(Color.GREEN);
+            paint.setColor(Color.BLUE);
+            paint.setTextSize(50);
+            paint.setFakeBoldText(true);
+            canvas.drawText("LEVEL 1 DONE!",canvas.getWidth() / 2 - 200,canvas.getHeight() / 2, paint);
+            invalidate();
+            Vibrator v = (Vibrator)getContext().getSystemService(Context.VIBRATOR_SERVICE);
+            v.vibrate(400);
+            try {
+                Thread.sleep(300);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+
+            levelSecondFirst = false;
 
         }
         invalidate();
@@ -239,6 +270,9 @@ public class ShowTime extends View{
 
 
     public void levelFirst(Canvas canvas){
+        currentLevel = 1;
+        gameOver = false;
+        levelUp = false;
 
         for(int i = totalBricks; i > 0; i--){
             if(i % 2 == 0)
@@ -253,6 +287,8 @@ public class ShowTime extends View{
                     bricks.add(new BrickSecond());
             Log.d("Bricks Creation", Integer.toString(i));
         }
+        //bricks.add(new Brick());
+
 
 
         //bricks.add(new BrickSecond());
@@ -270,16 +306,18 @@ public class ShowTime extends View{
 
     }
     public void levelSecond(Canvas canvas){
-        canvas.drawColor(Color.GREEN);
-        paint.setColor(Color.BLUE);
-        paint.setTextSize(50);
-        paint.setFakeBoldText(true);
-        canvas.drawText("LEVEL 1 DONE!",canvas.getWidth() / 2 - 200,canvas.getHeight() / 2, paint);
-        try {
-            Thread.sleep(500);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+//        canvas.drawColor(Color.GREEN);
+//        paint.setColor(Color.BLUE);
+//        paint.setTextSize(50);
+//        paint.setFakeBoldText(true);
+        //canvas.drawText("LEVEL 1 DONE!",canvas.getWidth() / 2 - 200,canvas.getHeight() / 2, paint);
+//        Vibrator v = (Vibrator)getContext().getSystemService(Context.VIBRATOR_SERVICE);
+//        v.vibrate(400);
+//        try {
+//            Thread.sleep(1000);
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
 
         for(int i = totalBricks; i > 0; i--){
             if(i % 2 == 0)
@@ -296,7 +334,7 @@ public class ShowTime extends View{
         }
 
 
-        //bricks.add(new BrickSecond());
+        bricks.add(new BrickSecond());
         int initialX = 0, initialY = 32;
         for (Brick brick:
                 bricks) {
@@ -314,36 +352,62 @@ public class ShowTime extends View{
 
     }
     public void lostLife(Canvas canvas){
-        invalidate();
+        //invalidate();
         primaryPostion = cellWidth/2 - 50;
         ballPositionX = cellWidth / 2;
         ballPositionY = cellHeight - 100;
         canvas.drawColor(Color.RED);
+        Vibrator v = (Vibrator)getContext().getSystemService(Context.VIBRATOR_SERVICE);
+        v.vibrate(100);
         try {
             Thread.sleep(100);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+        invalidate();
 
     }
     public void gameOver(Canvas canvas){
-        invalidate();
-        bricks.clear();
-        paint.setColor(Color.MAGENTA);
-        canvas.drawRect(0, 0, canvas.getWidth(), canvas.getHeight(), paint);
-        canvas.drawColor(Color.parseColor("#C62828"));
-        paint.setColor(Color.WHITE);
-        paint.setTextSize(50);
-        paint.setFakeBoldText(true);
-        canvas.drawText("GAME OVER",canvas.getWidth() / 2 - 110,canvas.getHeight() / 2,paint);
-        canvas.drawText("FINAL SCORE: "+ lifeSpan.getPoint(),canvas.getWidth() / 2 - 200,canvas.getHeight() / 2 + 60,paint);
-        //Intent i = new Intent((StartActivity)getContext(), GameOverActivity.class);
-        try {
-            Thread.sleep(200);
-            ((StartActivity )getContext()).finish();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        isFirst = false;
+        canvas.drawColor(Color.RED);
+//        Paint over = new Paint();
+//        over.setColor(Color.RED);
+//        canvas.drawRect(0, 0, canvas.getWidth(), canvas.getHeight(), over);
+//        over.setStyle(Paint.Style.FILL);
+//        over.setTextSize(50);
+//        over.setFakeBoldText(true);
+//        canvas.drawText("FINAL SCORE : "+ lifeSpan.getPoint(),canvas.getWidth() / 2 - 200,canvas.getHeight() / 2, over);
+        Vibrator v = (Vibrator)getContext().getSystemService(Context.VIBRATOR_SERVICE);
+        v.vibrate(300);
+//        try {
+//            Thread.sleep(200);
+//
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
+        Intent i = new Intent(getContext(), GameOverActivity.class);
+        i.putExtra("SCORE", Integer.toString(lifeSpan.getPoint()));
+        getContext().startActivity(i);
+        ((StartActivity )getContext()).finish();
+//        invalidate();
+//        bricks.clear();
+//        paint.setColor(Color.MAGENTA);
+//        canvas.drawRect(0, 0, canvas.getWidth(), canvas.getHeight(), paint);
+//        canvas.drawColor(Color.parseColor("#C62828"));
+//        paint.setColor(Color.WHITE);
+//        paint.setTextSize(50);
+//        paint.setFakeBoldText(true);
+//        canvas.drawText("GAME OVER",canvas.getWidth() / 2 - 110,canvas.getHeight() / 2,paint);
+//        canvas.drawText("FINAL SCORE: "+ lifeSpan.getPoint(),canvas.getWidth() / 2 - 200,canvas.getHeight() / 2 + 60,paint);
+//        //Intent i = new Intent((StartActivity)getContext(), GameOverActivity.class);
+//        Vibrator v = (Vibrator)getContext().getSystemService(Context.VIBRATOR_SERVICE);
+//        v.vibrate(200);
+//        try {
+//            Thread.sleep(200);
+//            ((StartActivity )getContext()).finish();
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
     }
 
 
