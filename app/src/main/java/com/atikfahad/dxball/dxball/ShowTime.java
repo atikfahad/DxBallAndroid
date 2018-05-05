@@ -6,17 +6,26 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.os.Handler;
 import android.os.Vibrator;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
 
-public class ShowTime extends View{
+public class ShowTime extends View implements SensorEventListener{
+    SensorManager mSensorManager;
+    Sensor mRotationVector;
     private boolean gameOver = false, levelUp = false;
     private boolean levelSecondFirst = false;
     LifeSpan lifeSpan;
@@ -232,6 +241,10 @@ public class ShowTime extends View{
     }
     public ShowTime(Context context) {
         super(context);
+        mSensorManager = (SensorManager)getContext().getSystemService(Context.SENSOR_SERVICE);
+        mRotationVector = mSensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
+        if (mRotationVector != null)
+            mSensorManager.registerListener(this, mRotationVector,SensorManager.SENSOR_DELAY_NORMAL);
         ball = new Ball();
         bar = new Bar();
         lifeSpan = new LifeSpan(context);
@@ -410,6 +423,44 @@ public class ShowTime extends View{
 //        }
     }
 
+    double previous = 0, present = 0;
+    @Override
+    public void onSensorChanged(SensorEvent sensorEvent) {
 
+        if (sensorEvent.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
+            present = sensorEvent.values[1];
+            present = round(present, 1);
+            if (previous > present) {
+                primaryPostion -= 70;
+            }
+            else if(previous < present)
+                primaryPostion += 70;
+            else
+                primaryPostion = primaryPostion;
+
+            if (primaryPostion + 200 >= cellWidth)
+                primaryPostion = cellWidth - 200;
+            else if (primaryPostion <= 0)
+                primaryPostion = 0;
+
+            previous = round(present, 1);
+        }
+
+    }
+
+
+            public static double round(double value, int places) {
+            if (places < 0) throw new IllegalArgumentException();
+
+            BigDecimal bd = new BigDecimal(value);
+            bd = bd.setScale(places, RoundingMode.HALF_UP);
+            return bd.doubleValue();
+            }
+
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int i) {
+
+    }
 }
 
